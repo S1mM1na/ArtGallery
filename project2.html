@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Room</title>
+    <script src="./three.js"></script>
+    <script src="./dat.gui.js"></script>
+    <script src="./OrbitControls.js"></script>
+    <script src="./RGBELoader.js"></script>
+    <script src="./GLTFLoader.js"></script>
+    <script src="./PointerLockControls.js"></script>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+
+        #blocker {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(255, 255, 255, 0.5);
+            }
+
+            #instructions {
+                width: 100%;
+                height: 100%;
+
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+
+                text-align: center;
+                font-size: 14px;
+                cursor: pointer;
+            }
+    </style>
+</head>
+<body>
+    <div id="blocker">
+        <div id="instructions">
+            <p style="font-size:36px">
+                Click to play
+            </p>
+            <p>
+                Human Move: Arrow Keys<br/>
+                Original Position: SPACE<br/>
+                Look: MOUSE
+            </p>
+        </div>
+    </div>
+    <script type="module">
+        function onResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function init() {
+                var loader = new THREE.TextureLoader();
+                var texture = loader.load('./textures/blue-sky.jpg');
+                scene = new THREE.Scene();
+                // scene.background = new THREE.Color(0xb9e0fd);
+                scene.background = loader.load('./textures/blue-sky.jpg');
+                camera = new THREE.PerspectiveCamera(
+                    45,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+            }
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xb9e0fd);
+        renderer.shadowMapEnabled = true;
+        document.body.appendChild(renderer.domElement);
+        var loader = new THREE.TextureLoader();
+        const gui = new dat.GUI();
+        
+
+        // ground mesh (미술관 바닥)
+        const pgeometry = new THREE.PlaneGeometry(200, 200);
+        const pmaterial = new THREE.MeshPhongMaterial({color: '#767676',specular: 0x555555, shininess: 30});
+        const plane = new THREE.Mesh(pgeometry, pmaterial);
+        plane.rotation.x = -0.5 * Math.PI; // 바닥이 평평하게 보이도록 회전값 변경
+        plane.position.set(0, 70, 0); // 위치 설정
+        plane.receiveShadow = true;
+        scene.add(plane);
+        // ground mesh (미술관 바닥2)
+        const p4geometry = new THREE.PlaneGeometry(200, 500);
+        const p4material = new THREE.MeshPhongMaterial({color: '#767676',specular: 0x555555, shininess: 30});
+        const plane4 = new THREE.Mesh(p4geometry, p4material);
+        plane4.rotation.x = -0.5 * Math.PI; // 바닥이 평평하게 보이도록 회전값 변경
+        plane4.position.set(-200, 70, 55); // 위치 설정
+        plane4.receiveShadow = true;
+        scene.add(plane4);
+        
+        // ground mesh (잔디)
+        var texture = loader.load('./textures/잔디.jpg');
+        const p2geometry = new THREE.PlaneGeometry(1200, 1200);
+        const p2material = new THREE.MeshStandardMaterial({map: texture});
+        const plane2 = new THREE.Mesh(p2geometry, p2material);
+        plane2.rotation.x = -0.5 * Math.PI; // 바닥이 평평하게 보이도록 회전값 변경
+        plane2.position.set(0, 69, 0); // 위치 설정
+        plane2.receiveShadow = true;
+        scene.add(plane2);
+
+        const doorgroup = new THREE.Group();
+        const doorgroup2 = new THREE.Group();
+
+        { // 천장
+            const cubeGeometry = new THREE.BoxGeometry(200, 200, 2); 
+            const cubeMaterial = new THREE.MeshPhysicalMaterial({ 
+                color: '#ffffff',
+                metalness:0.1,
+                roughness:0.05,
+                ior:2.5,
+                thickness:0.2,
+                transmission:1,
+                side: THREE.DoubleSide,});
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 130, 0);
+            cube.rotation.x = -0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 천장2
+            const cubeGeometry = new THREE.BoxGeometry(200, 500, 2); 
+            const cubeMaterial = new THREE.MeshPhysicalMaterial({ 
+                color: '#ffffff',
+                metalness:0.1,
+                roughness:0.05,
+                ior:2.5,
+                thickness:0.2,
+                transmission:1,
+                side: THREE.DoubleSide,});
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-200, 260, 55);
+            cube.rotation.x = -0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+
+        { // 건물테두리 1
+            const cubeGeometry = new THREE.BoxGeometry(1, 60, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#dddddd' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(100, 100, 100);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 건물테두리 2
+            const cubeGeometry = new THREE.BoxGeometry(1, 60, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#dddddd' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(100, 100, -100);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 건물테두리 3
+            const cubeGeometry = new THREE.BoxGeometry(1, 80, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#dddddd' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-100, 100, 100);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 건물테두리 4
+            const cubeGeometry = new THREE.BoxGeometry(1, 80, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#dddddd' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-100, 100, -100);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 바깥 육면체 1
+            const cubeGeometry = new THREE.BoxGeometry(200, 60, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-100, 100, 0);
+            cube.rotation.y = -0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+
+        { // 바깥 육면체 2-1
+            const cubeGeometry = new THREE.BoxGeometry(65, 60, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(100, 100, 67.5);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 바깥 육면체 2-2
+            const cubeGeometry = new THREE.BoxGeometry(65, 60, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(100, 100, -67.5);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+
+        { // 바깥 육면체 3
+            const cubeGeometry = new THREE.BoxGeometry(200, 60, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 100, 100);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+
+        { // 바깥 육면체 4
+            const cubeGeometry = new THREE.BoxGeometry(200, 60, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 100, -100);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { //옆 건물 (왼쪽)
+            const cubeGeometry = new THREE.BoxGeometry(200, 60, 100);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 100, 150);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);    
+        }
+        { //옆 건물 (오른쪽)
+            const cubeGeometry = new THREE.BoxGeometry(200, 40, 100);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 90, -150);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);    
+        }
+        { //옆 건물 (오른쪽 위)
+            const cubeGeometry = new THREE.BoxGeometry(100, 60, 100);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#eeeeee' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-50, 140, -150);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);    
+        }
+        { //옆 건물 (왼쪽 위)
+            const cubeGeometry = new THREE.BoxGeometry(250, 60, 100);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#eeeeee' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(25, 160, 150);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);    
+        }
+        {   //건물 기둥 1
+            const cubeGeometry = new THREE.BoxGeometry(5, 70, 5);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#dddddd' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(140, 105, 115);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        
+        {   //건물 기둥 2
+            const cubeGeometry = new THREE.BoxGeometry(5, 70, 5);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#dddddd' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(140, 105, 185);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 뒷 건물 바깥 육면체 1
+            const cubeGeometry = new THREE.BoxGeometry(1, 200, 500);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-100, 160, 55);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+
+        { // 뒷 건물 바깥 육면체 2
+            const cubeGeometry = new THREE.BoxGeometry(1, 200, 500);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-300, 160, 55);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+
+        { // 뒷 건물 바깥 육면체 3
+            const cubeGeometry = new THREE.BoxGeometry(200, 200, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-200, 160, 305);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+
+        { // 뒷 건물 바깥 육면체 4
+            const cubeGeometry = new THREE.BoxGeometry(200, 200, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-200, 160, -195);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+        }
+        { // 글자
+            var texture = loader.load('./textures/mina.jpg');
+            const cubeGeometry = new THREE.BoxGeometry(100, 30, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ map: texture });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-99, 235, -130);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            cube.rotation.y = 0.5 * Math.PI;
+            scene.add(cube);
+        }
+
+        {//젤 큰 그림
+            var texture = loader.load('./textures/다운로드.jpg');
+            const p1Geometry = new THREE.BoxGeometry(150,100 , 2);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-299, 160, 180);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            p1.rotation.y = 0.5 * Math.PI;
+            scene.add(p1);
+        }
+        {//액자 
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(155,105 , 1.3);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-299, 160, 180);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            f1.rotation.y = 0.5 * Math.PI;
+            scene.add(f1);
+        }
+        {//설명
+            const f1Geometry = new THREE.BoxGeometry(20,10 , 1.3);
+            const f1Material = new THREE.MeshStandardMaterial({color: '#aaaaaa'});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-297, 120, 85);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            f1.rotation.y = 0.5 * Math.PI;
+            scene.add(f1);
+        }
+        {//젤 큰 그림 2
+            var texture = loader.load('./textures/images (8).jpg');
+            const p1Geometry = new THREE.BoxGeometry(150,100 , 2);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-299, 160, -80);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            p1.rotation.y = 0.5 * Math.PI;
+            scene.add(p1);
+        }
+        {//액자 
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(155,105 , 1.3);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-299, 160, -80);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            f1.rotation.y = 0.5 * Math.PI;
+            scene.add(f1);
+        }
+        {//설명
+            const f1Geometry = new THREE.BoxGeometry(20,10 , 1.3);
+            const f1Material = new THREE.MeshStandardMaterial({color: '#aaaaaa'});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-297, 120, 15);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            f1.rotation.y = 0.5 * Math.PI;
+            scene.add(f1);
+        }
+        
+
+        {//의자
+            const f1Geometry = new THREE.BoxGeometry(20,20 ,150);
+            const f1Material = new THREE.MeshStandardMaterial({color: '#dddddd'});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-150, 75, 180);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            
+            scene.add(f1);
+        }
+        
+        {//의자2
+            const f1Geometry = new THREE.BoxGeometry(20,20 ,150);
+            const f1Material = new THREE.MeshStandardMaterial({color: '#dddddd'});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-150, 75, -80);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            
+            scene.add(f1);
+        }
+       
+        {//spot light
+        const slight = new THREE.SpotLight(0xffcc00, 0.8, 100, Math.PI/2);
+            slight.shadow.mapSize.set(2048,2048);
+            slight.position.set(-290, 150, 170);
+            slight.castShadow = true;
+            gui.add(slight, "visible").name("SpotLight1")
+            scene.add(slight);
+            const s2light = new THREE.SpotLight(0xffcc00, 0.8, 100, Math.PI/2);
+            s2light.shadow.mapSize.set(2048,2048);
+            s2light.position.set(-290, 150, -70);
+            s2light.castShadow = true;
+            gui.add(s2light, "visible").name("SpotLight1")
+            scene.add(s2light);
+        }
+        {// 문(왼쪽)
+            const cube1Geometry = new THREE.BoxGeometry(40, 60, 2); //32.5
+            const cube1Material = new THREE.MeshPhysicalMaterial({ 
+                color: '#ffffff',
+                metalness:0.1,
+                roughness:0.05,
+                ior:2.5,
+                thickness:0.2,
+                transmission:1,
+                side: THREE.DoubleSide,});
+            const cube1 = new THREE.Mesh(cube1Geometry, cube1Material);
+            cube1.position.set(101, 100, 20);
+            cube1.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube1.castShadow = true;
+            cube1.receiveShadow = true;
+        
+         // 문 테두리 1 (왼)
+            const cube2Geometry = new THREE.BoxGeometry(1, 60, 1);
+            const cube2Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube2 = new THREE.Mesh(cube2Geometry, cube2Material);
+            cube2.position.set(101, 100, 40);
+            cube2.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube2.castShadow = true;
+            cube2.receiveShadow = true;
+        
+         // 문 테두리 2 (오)
+            const cube3Geometry = new THREE.BoxGeometry(1, 60, 1);
+            const cube3Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube3 = new THREE.Mesh(cube3Geometry, cube3Material);
+            cube3.position.set(101, 100, 0);
+            cube3.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube3.castShadow = true;
+            cube3.receiveShadow = true;
+        
+         // 문 테두리 3 (위)
+            const cube4Geometry = new THREE.BoxGeometry(40, 1, 1);
+            const cube4Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube4 = new THREE.Mesh(cube4Geometry, cube4Material);
+            cube4.position.set(101, 130, 20);
+            cube4.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube4.castShadow = true;
+            cube4.receiveShadow = true;
+        
+         // 문 테두리 4 (아래)
+            const cube5Geometry = new THREE.BoxGeometry(40, 1, 1);
+            const cube5Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube5 = new THREE.Mesh(cube5Geometry, cube5Material);
+            cube5.position.set(101, 70, 20);
+            cube5.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube5.castShadow = true;
+            cube5.receiveShadow = true;
+
+        
+                doorgroup.position.set(0,0,35);
+                doorgroup.add(cube1);
+                doorgroup.add(cube2);
+                doorgroup.add(cube3);
+                doorgroup.add(cube4);
+                doorgroup.add(cube5);
+                // doorgroup.add(cube6);
+                // doorgroup.add(cube7);
+                // doorgroup.add(cube8);
+                scene.add(doorgroup);
+        }
+
+        {// 문(오른쪽)
+
+            const cube1Geometry = new THREE.BoxGeometry(40, 60, 2);
+            const cube1Material = new THREE.MeshPhysicalMaterial({ 
+                color: '#ffffff',
+                metalness:0.1,
+                roughness:0.05,
+                ior:2.5,
+                thickness:0.2,
+                transmission:1,
+                side: THREE.DoubleSide,});
+            const cube1 = new THREE.Mesh(cube1Geometry, cube1Material);
+            cube1.position.set(101, 100, -20);
+            cube1.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube1.castShadow = true;
+            cube1.receiveShadow = true;
+        
+         // 문 테두리 1 (왼)
+            const cube2Geometry = new THREE.BoxGeometry(1, 60, 1);
+            const cube2Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube2 = new THREE.Mesh(cube2Geometry, cube2Material);
+            cube2.position.set(101, 100, 0);
+            cube2.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube2.castShadow = true;
+            cube2.receiveShadow = true;
+        
+         // 문 테두리 2 (오)
+            const cube3Geometry = new THREE.BoxGeometry(1, 60, 1);
+            const cube3Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube3 = new THREE.Mesh(cube3Geometry, cube3Material);
+            cube3.position.set(101, 100, -40);
+            cube3.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube3.castShadow = true;
+            cube3.receiveShadow = true;
+        
+         // 문 테두리 3 (위)
+            const cube4Geometry = new THREE.BoxGeometry(40, 1, 1);
+            const cube4Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube4 = new THREE.Mesh(cube4Geometry, cube4Material);
+            cube4.position.set(101, 130, -20);
+            cube4.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube4.castShadow = true;
+            cube4.receiveShadow = true;
+        
+         // 문 테두리 4 (아래)
+            const cube5Geometry = new THREE.BoxGeometry(40, 1, 1);
+            const cube5Material = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube5 = new THREE.Mesh(cube5Geometry, cube5Material);
+            cube5.position.set(101, 70, -20);
+            cube5.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube5.castShadow = true;
+            cube5.receiveShadow = true;
+        
+        
+
+                doorgroup2.position.set(0,0,-35);
+                doorgroup2.add(cube1);
+                doorgroup2.add(cube2);
+                doorgroup2.add(cube3);
+                doorgroup2.add(cube4);
+                doorgroup2.add(cube5);
+                // doorgroup2.add(cube6);
+                // doorgroup2.add(cube7);
+                //doorgroup2.add(cube8);
+                scene.add(doorgroup2);
+        }
+        { //안쪽 정사각형 
+            const cubeGeometry = new THREE.BoxGeometry(70, 60, 70);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 100, 0);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);    
+        }
+        
+
+        
+        {//그림 1
+            var texture = loader.load('./textures/images (12).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(60, 100, -98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 1
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(60, 100, -98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 2
+            var texture = loader.load('./textures/images (1).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(20, 100, -98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 2
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(20, 100, -98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 3
+            var texture = loader.load('./textures/images (11).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-20, 100, -98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 3
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-20, 100, -98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 4
+            var texture = loader.load('./textures/images (5).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-60, 100, -98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 4
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-60, 100, -98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 5
+            var texture = loader.load('./textures/images.jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-98, 100, 60);
+            p1.rotation.y = 0.5 * Math.PI;
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 5
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-98, 100, 60);
+            f1.rotation.y = 0.5 * Math.PI;
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 6
+            var texture = loader.load('./textures/images (6).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-98, 100, 20);
+            p1.rotation.y = 0.5 * Math.PI;
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 6
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-98, 100, 20);
+            f1.rotation.y = 0.5 * Math.PI;
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 7
+            var texture = loader.load('./textures/images (7).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-98, 100, -20);
+            p1.rotation.y = 0.5 * Math.PI;
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 7
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-98, 100, -20);
+            f1.rotation.y = 0.5 * Math.PI;
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 8
+            var texture = loader.load('./textures/images (13).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-98, 100, -60);
+            p1.rotation.y = 0.5 * Math.PI;
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 8
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-98, 100, -60);
+            f1.rotation.y = 0.5 * Math.PI;
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 9
+            var texture = loader.load('./textures/images (10).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-60, 100, 98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 9
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-60, 100, 98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 10
+            var texture = loader.load('./textures/images (2).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-20, 100, 98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 10
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-20, 100, 98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 11
+            var texture = loader.load('./textures/다운로드 (2).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(20, 100, 98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 11
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(20, 100, 98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 12
+            var texture = loader.load('./textures/다운로드 (3).jpg');
+            const p1Geometry = new THREE.BoxGeometry(10, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(60, 100, 98);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 12
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(12, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(60, 100, 98);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 13
+            var texture = loader.load('./textures/images (2).jpg');
+            const p1Geometry = new THREE.BoxGeometry(30, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(0, 100, 35);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 13
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(35, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(0, 100, 35);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 14
+            var texture = loader.load('./textures/images (3).jpg');
+            const p1Geometry = new THREE.BoxGeometry(30, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(0, 100, -35);
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 14
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(35, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(0, 100, -35);
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 15
+            var texture = loader.load('./textures/images (8).jpg');
+            const p1Geometry = new THREE.BoxGeometry(30, 15, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(-35, 100, 0);
+            p1.rotation.y = 0.5 * Math.PI;
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        {//액자 15
+            var texture = loader.load('./textures/27.jpg');
+            const f1Geometry = new THREE.BoxGeometry(35, 17, 0.8);
+            const f1Material = new THREE.MeshStandardMaterial({map: texture});
+            const f1 = new THREE.Mesh(f1Geometry, f1Material);
+            f1.position.set(-35, 100, 0);
+            f1.rotation.y = 0.5 * Math.PI;
+            f1.castShadow = true;
+            f1.receiveShadow = true;
+            scene.add(f1);
+        }
+        {//그림 16(입구)
+            var texture = loader.load('./textures/main.jpg');
+            const p1Geometry = new THREE.BoxGeometry(30, 50, 1);
+            const p1Material = new THREE.MeshStandardMaterial({map: texture});
+            const p1 = new THREE.Mesh(p1Geometry, p1Material);
+            p1.position.set(35, 100, 0);
+            p1.rotation.y = 0.5 * Math.PI;
+            p1.castShadow = true;
+            p1.receiveShadow = true;
+            scene.add(p1);
+        }
+        { //기둥1 (왼쪽)
+        {
+            const cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(90, 90, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(8, 1, 8);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(90, 72, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(1, 18, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(90, 83, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        }
+        {//기둥2
+        {
+            const cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 90, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(8, 1, 8);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 72, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(1, 18, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 83, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        }
+        {//기둥3
+            {
+            const cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 90, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(8, 1, 8);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 72, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(1, 18, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 83, 90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {//기둥연결하는선1
+            const curve = new THREE.QuadraticBezierCurve(
+	        new THREE.Vector2( -45, 0 ),
+	        new THREE.Vector2( 0, -10 ),
+	        new THREE.Vector2( 45, 0 )
+            );
+
+            const points = curve.getPoints( 50 );
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+            const material = new THREE.LineBasicMaterial( { color: 0x000000 } );
+
+            const curveObject = new THREE.Line( geometry, material );
+            curveObject.position.set(45, 90, 90);
+            curveObject.castShadow = true;
+            curveObject.receiveShadow = true;
+            scene.add(curveObject);
+        }
+        
+        {//기둥연결하는선2
+            const curve = new THREE.QuadraticBezierCurve(
+	        new THREE.Vector2( -45, 0 ),
+	        new THREE.Vector2( 0, -10 ),
+	        new THREE.Vector2( 45, 0 )
+            );
+
+            const points = curve.getPoints( 50 );
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+            const material = new THREE.LineBasicMaterial( { color: 0x000000 } );
+
+            const curveObject = new THREE.Line( geometry, material );
+            curveObject.position.set(-45, 90, 90);
+            curveObject.castShadow = true;
+            curveObject.receiveShadow = true;
+            scene.add(curveObject);
+        }
+        }
+        { //기둥4(오른쪽)
+        {
+            const cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(90, 90, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(8, 1, 8);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(90, 72, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(1, 18, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(90, 83, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        }
+        {//기둥5
+        {
+            const cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 90, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(8, 1, 8);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 72, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(1, 18, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(0, 83, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        }
+        {//기둥6
+            {
+            const cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 90, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(8, 1, 8);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 72, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(1, 18, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 83, -90);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {//기둥연결하는선1
+            const curve = new THREE.QuadraticBezierCurve(
+	        new THREE.Vector2( -45, 0 ),
+	        new THREE.Vector2( 0, -10 ),
+	        new THREE.Vector2( 45, 0 )
+            );
+
+            const points = curve.getPoints( 50 );
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+            const material = new THREE.LineBasicMaterial( { color: 0x000000 } );
+
+            const curveObject = new THREE.Line( geometry, material );
+            curveObject.position.set(45, 90, -90);
+            curveObject.castShadow = true;
+            curveObject.receiveShadow = true;
+            scene.add(curveObject);
+        }
+        
+        {//기둥연결하는선2
+            const curve = new THREE.QuadraticBezierCurve(
+	        new THREE.Vector2( -45, 0 ),
+	        new THREE.Vector2( 0, -10 ),
+	        new THREE.Vector2( 45, 0 )
+            );
+
+            const points = curve.getPoints( 50 );
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+            const material = new THREE.LineBasicMaterial( { color: 0x000000 } );
+
+            const curveObject = new THREE.Line( geometry, material );
+            curveObject.position.set(-45, 90, -90);
+            curveObject.castShadow = true;
+            curveObject.receiveShadow = true;
+            scene.add(curveObject);
+        }
+        
+        }
+
+        {//기둥(가운데)
+            {
+            const cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 90, 0);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(8, 1, 8);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 72, 0);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {
+            const cubeGeometry = new THREE.BoxGeometry(1, 18, 1);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ color: '#000000' });
+            const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-90, 83, 0);
+            cube.rotation.y = 0.5 * Math.PI; // 회전값 변경
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube); 
+        }
+        {//기둥연결하는선1
+            const curve = new THREE.QuadraticBezierCurve(
+	        new THREE.Vector2( -45, 0 ),
+	        new THREE.Vector2( 0, -10 ),
+	        new THREE.Vector2( 45, 0 )
+            );
+
+            const points = curve.getPoints( 50 );
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+            const material = new THREE.LineBasicMaterial( { color: 0x000000 } );
+
+            const curveObject = new THREE.Line( geometry, material );
+            curveObject.position.set(-90, 90, 45);
+            curveObject.rotation.y = 0.5 * Math.PI;
+            curveObject.castShadow = true;
+            curveObject.receiveShadow = true;
+            scene.add(curveObject);
+        }
+        
+        {//기둥연결하는선2
+            const curve = new THREE.QuadraticBezierCurve(
+	        new THREE.Vector2( -45, 0 ),
+	        new THREE.Vector2( 0, -10 ),
+	        new THREE.Vector2( 45, 0 )
+            );
+
+            const points = curve.getPoints( 50 );
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+            const material = new THREE.LineBasicMaterial( { color: 0x000000 } );
+
+            const curveObject = new THREE.Line( geometry, material );
+            curveObject.position.set(-90, 90, -45);
+            curveObject.rotation.y = 0.5 * Math.PI;
+            curveObject.castShadow = true;
+            curveObject.receiveShadow = true;
+            scene.add(curveObject);
+        }
+       
+        }
+        camera.position.set(-30, 300, 30);
+        camera.lookAt(scene.position);
+
+        var xSpeed = 0.1;
+        var ySpeed = 0.1;
+
+        // 카메라 이동 (wasd,  위(+z) : q, 아래(-z) : e)
+        window.addEventListener("keydown", (event) => {
+                    var keyCode = event.which;
+                    if (keyCode == 87) { //w
+                        camera.position.x -= 5*xSpeed;
+                    } else if (keyCode == 83) { //s
+                        camera.position.x += 5*xSpeed;
+                    } else if (keyCode == 65) { //a
+                        camera.position.z += 5*ySpeed;
+                    } else if (keyCode == 68) { //d
+                        camera.position.z -= 5*xSpeed;
+                    } else if (keyCode == 81) { //q
+                        camera.position.y += 5*ySpeed;
+                    } else if (keyCode == 69) { //e
+                        camera.position.y -= 5*ySpeed;
+                    } 
+                    }
+                );
+
+        // 화면 마우스로 회전
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        { //light
+             //ambient light (sunset)
+            const alight = new THREE.AmbientLight(0xffffff, 0.2);
+            alight.visible = false;
+            scene.add(alight);
+            gui.add(alight, "visible").name("AmbientLight-sunset")
+
+            // directional light1
+            const dlight = new THREE.DirectionalLight(0xffffff, 1);
+            dlight.position.set(5, 5, 5);
+            scene.add(dlight);
+            
+            // directional light2
+            const dlight2 = new THREE.DirectionalLight(0xffffff, 1);
+            dlight2.position.set(-5, -5, -5);
+            scene.add(dlight2);
+            
+            //point light
+            const plight = new THREE.PointLight(0xffffff, 1, 120, 1);
+            plight.position.set(0, 120, 0);
+            plight.castShadow = true;
+            scene.add(plight);
+            gui.add(plight, "visible").name("PointLight")
+
+            //spot light1
+            const slight = new THREE.SpotLight(0xffcc00, 0.5, 100, Math.PI/2);
+            slight.shadow.mapSize.set(2048,2048);
+            slight.position.set(0, 90, -100);
+            slight.castShadow = true;
+            gui.add(slight, "visible").name("SpotLight1")
+            scene.add(slight);
+
+            //spot light2
+            const slight2 = new THREE.SpotLight(0xffcc00, 0.5, 100, Math.PI/2);
+            slight2.shadow.mapSize.set(2048,2048);
+            slight2.position.set(-100, 90, 0);
+            slight2.castShadow = true;
+            gui.add(slight2, "visible").name("SpotLight2")
+            slight2.rotation.y = 0.5 * Math.PI;
+            scene.add(slight2);
+
+            //spot light3
+            const slight3 = new THREE.SpotLight(0xffcc00, 0.5, 100, Math.PI/2);
+            slight3.shadow.mapSize.set(2048,2048);
+            slight3.position.set(0, 90, 100);
+            slight3.castShadow = true;
+            gui.add(slight3, "visible").name("SpotLight3")
+            scene.add(slight3);
+
+        }
+
+        
+{ //나무
+var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+
+var leaveDarkMaterial = new THREE.MeshLambertMaterial( { color: 0x354f14 } );
+var leaveLightMaterial = new THREE.MeshLambertMaterial( { color: 0x456819 } );
+var leaveDarkDarkMaterial = new THREE.MeshLambertMaterial( { color: 0x71B356 } );
+var stemMaterial = new THREE.MeshLambertMaterial( { color: 0x7D5A4F } );
+
+var stem = new THREE.Mesh( geometry, stemMaterial );
+  stem.position.set( 0, 0, 0 );
+  stem.scale.set( 0.3, 1.5, 0.3 );
+
+  var squareLeave01 = new THREE.Mesh( geometry, leaveDarkMaterial );
+  squareLeave01.position.set( 0.5, 1.6, 0.5 );
+  squareLeave01.scale.set( 0.8, 0.8, 0.8 );
+
+  var squareLeave02 = new THREE.Mesh( geometry, leaveDarkMaterial );
+  squareLeave02.position.set( -0.4, 1.3, -0.4 );
+  squareLeave02.scale.set( 0.7, 0.7, 0.7 );
+
+  var squareLeave03 = new THREE.Mesh( geometry, leaveDarkMaterial );
+  squareLeave03.position.set( 0.4, 1.7, -0.5 );
+  squareLeave03.scale.set( 0.7, 0.7, 0.7 );
+
+  var leaveDark = new THREE.Mesh( geometry, leaveDarkMaterial );
+  leaveDark.position.set( 0, 1.2, 0 );
+  leaveDark.scale.set( 1, 2, 1 );
+
+  var leaveLight = new THREE.Mesh( geometry, leaveLightMaterial );
+  leaveLight.position.set( 0, 1.2, 0 );
+  leaveLight.scale.set( 1.1, 0.5, 1.1 );
+
+ 
+  
+  var ground = new THREE.Mesh( geometry, stemMaterial );
+  ground.position.set( 0, -0.8, 0 );
+  ground.scale.set( 1.6, 0.4, 1.6 );
+
+var tree = new THREE.Group();
+tree.add( leaveDark );
+tree.add( leaveLight );
+tree.add( squareLeave01 );
+tree.add( squareLeave02 );
+tree.add( squareLeave03 );
+//tree.add( ground );
+tree.add( stem );
+
+tree.scale.set(50,50,50);
+tree.position.set(80, 110, -280);
+
+scene.add(tree);
+
+}
+{ //나무2
+var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+
+var leaveDarkMaterial = new THREE.MeshLambertMaterial( { color: 0x354f14 } );
+var leaveLightMaterial = new THREE.MeshLambertMaterial( { color: 0x456819 } );
+var leaveDarkDarkMaterial = new THREE.MeshLambertMaterial( { color: 0x71B356 } );
+var stemMaterial = new THREE.MeshLambertMaterial( { color: 0x7D5A4F } );
+
+var stem = new THREE.Mesh( geometry, stemMaterial );
+  stem.position.set( 0, 0, 0 );
+  stem.scale.set( 0.3, 1.5, 0.3 );
+
+  var squareLeave01 = new THREE.Mesh( geometry, leaveDarkMaterial );
+  squareLeave01.position.set( 0.5, 1.6, 0.5 );
+  squareLeave01.scale.set( 0.8, 0.8, 0.8 );
+
+  var squareLeave02 = new THREE.Mesh( geometry, leaveDarkMaterial );
+  squareLeave02.position.set( -0.4, 1.3, -0.4 );
+  squareLeave02.scale.set( 0.7, 0.7, 0.7 );
+
+  var squareLeave03 = new THREE.Mesh( geometry, leaveDarkMaterial );
+  squareLeave03.position.set( 0.4, 1.7, -0.5 );
+  squareLeave03.scale.set( 0.7, 0.7, 0.7 );
+
+  var leaveDark = new THREE.Mesh( geometry, leaveDarkMaterial );
+  leaveDark.position.set( 0, 1.2, 0 );
+  leaveDark.scale.set( 1, 2, 1 );
+
+  var leaveLight = new THREE.Mesh( geometry, leaveLightMaterial );
+  leaveLight.position.set( 0, 1.2, 0 );
+  leaveLight.scale.set( 1.1, 0.5, 1.1 );
+
+ 
+  
+  var ground = new THREE.Mesh( geometry, stemMaterial );
+  ground.position.set( 0, -0.8, 0 );
+  ground.scale.set( 1.6, 0.4, 1.6 );
+
+var tree = new THREE.Group();
+tree.add( leaveDark );
+tree.add( leaveLight );
+tree.add( squareLeave01 );
+tree.add( squareLeave02 );
+tree.add( squareLeave03 );
+//tree.add( ground );
+tree.add( stem );
+
+tree.scale.set(50,50,50);
+tree.position.set(80, 110, 320);
+
+scene.add(tree);
+
+}
+
+{// 사람
+    const loader = new THREE.GLTFLoader();
+    var loadedData;
+    loader.load('./textures/human.glb', (data) => {
+        loadedData = data;
+        loadedData.scene.position.set(-50, 101, 50);
+        loadedData.scene.scale.set(20, 20, 20);
+        scene.add(loadedData.scene);
+    });
+}
+
+var xSpeed = 1;
+var ySpeed = 1;
+
+// 사람 이동(방향키)
+window.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented) {
+        return;
+    }
+
+    console.log("Arrow key pressed"); // 디버깅을 위한 로그 추가
+
+    if (loadedData && loadedData.scene) {
+        console.log("Before move:", loadedData.scene.position.clone()); // 디버깅을 위한 로그 추가
+
+        switch (event.code) {
+            case "ArrowDown":
+                loadedData.scene.position.z += ySpeed;
+                break;
+            case "ArrowUp":
+                loadedData.scene.position.z -= ySpeed;
+                break;
+            case "ArrowLeft":
+                loadedData.scene.position.x -= xSpeed;
+                break;
+            case "ArrowRight":
+                loadedData.scene.position.x += xSpeed;
+                break;
+        }
+
+        console.log("After move:", loadedData.scene.position.clone()); // 디버깅을 위한 로그 추가
+
+        refresh();
+    }
+
+    if (event.code !== "Tab") {
+        event.preventDefault();
+    }
+}, true);
+
+
+                blocker.addEventListener( 'click', function () { 
+                    instructions.style.display = 'none'; 
+                    blocker.style.display = 'none'; 
+                } ); 
+        
+                var step = 0;
+                // render the scene
+                
+                function renderScene() {
+
+                    step += 0.01;
+                    doorgroup.position.z = (35 * Math.abs(Math.sin(step)));
+                    doorgroup2.position.z = (-1)*(35 * Math.abs(Math.sin(step)));
+
+                    requestAnimationFrame(renderScene);
+                    renderer.render(scene, camera);
+                }
+
+                renderScene();
+
+        window.onload = init;
+
+        window.addEventListener('resize', onResize, false);
+    </script>
+</body>
+</html>
