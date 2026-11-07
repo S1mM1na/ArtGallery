@@ -3,9 +3,6 @@
 > 웹 브라우저에서 바로 관람할 수 있는 **빈센트 반 고흐 가상 미술관**
 > Three.js로 건물·조명·작품·인터랙션을 직접 모델링하고 구현한 컴퓨터그래픽스 프로젝트입니다.
 
-<p align="center">
-  <img src="images/front.png" width="80%" alt="MinA Museum 정면"/>
-</p>
 
 <br/>
 
@@ -150,8 +147,3 @@ ArtGallery
 
 <br/>
 
-## 🙋‍♀️ Developer
-
-| 이름 | 소속 | Contact |
-| --- | --- | --- |
-| 심민아 | 소프트웨어학부 | simmina@naver.com |
