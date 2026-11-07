@@ -1,4 +1,4 @@
-# 🖼️ MinA Museum — Three.js 3D Art Gallery
+# Three.js 3D Art Gallery
 
 > 웹 브라우저에서 바로 관람할 수 있는 **빈센트 반 고흐 가상 미술관**
 > Three.js로 건물·조명·작품·인터랙션을 직접 모델링하고 구현한 컴퓨터그래픽스 프로젝트입니다.
@@ -10,7 +10,7 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 프로젝트명 | **MinA Museum** (ArtGalleryByThreeJS) |
+| 프로젝트명 | **Museum** (ArtGalleryByThreeJS) |
 | 과목 | 컴퓨터그래픽스 (Computer Graphics) |
 | 개발자 | 심민아 (소프트웨어학부) |
 | 주제 | 반 고흐 작품을 전시한 3D 가상 미술관 |
